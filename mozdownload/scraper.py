@@ -83,10 +83,10 @@ class Scraper(object):
                  application='firefox', locale='en-US', extension=None,
                  authentication=None, retry_attempts=0, retry_delay=10.,
                  is_stub_installer=False, timeout=None, log_level='INFO',
-                 base_url=BASE_URL):
+                 base_url=BASE_URL, template=None):
 
         # Private properties for caching
-        self._target = None
+        self._target = template
         self._binary = None
 
         self.directory = directory
@@ -215,6 +215,7 @@ class Scraper(object):
         if self._target is None:
             self._target = os.path.join(self.directory,
                                         self.build_filename(self.binary))
+
         return self._target
 
     def get_build_info(self):
@@ -316,7 +317,10 @@ class Scraper(object):
                     raise
                 time.sleep(self.retry_delay)
 
-        os.rename(tmp_file, self.target)
+        if os.path.splitext(self._target)[1] != self.extension:
+            os.rename(tmp_file, ".".join([self.target, self.extension]))
+        else:
+            os.rename(tmp_file, self.target)
 
     def show_matching_builds(self, builds):
         """Output the matching builds"""
@@ -340,6 +344,25 @@ class DailyScraper(Scraper):
         self.build_number = build_number
 
         Scraper.__init__(self, *args, **kwargs)
+
+    @property
+    def target(self):
+        """Return the target file name of the build"""
+
+        if self._target is None:
+            self._target = os.path.join(self.directory,
+                                        self.build_filename(self.binary))
+        else:
+            self._target = self._target % {
+                'A': self.application,
+                'B': self.branch,
+                'D': self.date,
+                'L': self.locale,
+                'P': self.platform,
+                'V': self.version
+            }
+            self._target = os.path.join(self.directory, self._target)
+        return self._target
 
     def get_build_info(self):
         """Defines additional build information"""
@@ -526,6 +549,23 @@ class ReleaseScraper(Scraper):
         Scraper.__init__(self, *args, **kwargs)
 
     @property
+    def target(self):
+        """Return the target file name of the build"""
+
+        if self._target is None:
+            self._target = os.path.join(self.directory,
+                                        self.build_filename(self.binary))
+        else:
+            self._target = self._target % {
+                'A': self.application,
+                'L': self.locale,
+                'P': self.platform,
+                'V': self.version
+            }
+            self._target = os.path.join(self.directory, self._target)
+        return self._target
+
+    @property
     def binary_regex(self):
         """Return the regex for the binary"""
 
@@ -570,6 +610,23 @@ class ReleaseCandidateScraper(ReleaseScraper):
         self.unsigned = False
 
         Scraper.__init__(self, *args, **kwargs)
+
+    @property
+    def target(self):
+        """Return the target file name of the build"""
+
+        if self._target is None:
+            self._target = os.path.join(self.directory,
+                                        self.build_filename(self.binary))
+        else:
+            self._target = self._target % {
+                'A': self.application,
+                'L': self.locale,
+                'P': self.platform,
+                'V': self.version
+            }
+            self._target = os.path.join(self.directory, self._target)
+        return self._target
 
     def get_build_info(self):
         "Defines additional build information"
@@ -675,6 +732,27 @@ class TinderboxScraper(Scraper):
         self.timezone = PacificTimezone()
 
         Scraper.__init__(self, *args, **kwargs)
+
+    @property
+    def target(self):
+        """Return the target file name of the build"""
+
+        if self._target is None:
+            self._target = os.path.join(self.directory,
+                                        self.build_filename(self.binary))
+        else:
+            self._target = self._target % {
+                'A': self.application,
+                'B': self.branch,
+                'BN': self.build_number,
+                'D': self.date,
+                'DEBUG': 'debug' if self.debug_build else '',
+                'L': self.locale,
+                'P': self.platform,
+                'V': self.version
+            }
+            self._target = os.path.join(self.directory, self._target)
+        return self._target
 
     def get_build_info(self):
         "Defines additional build information"
@@ -865,6 +943,10 @@ def cli():
                       action='store_true',
                       help='Stub installer. '
                            'Only applicable to Windows builds.')
+    parser.add_option('--template',
+                      dest='template',
+                      metavar='TEMPLATE',
+                      help='Define a template filename')
     parser.add_option('--type', '-t',
                       dest='type',
                       choices=BUILD_TYPES.keys(),
@@ -989,6 +1071,7 @@ def cli():
                         'retry_attempts': options.retry_attempts,
                         'retry_delay': options.retry_delay,
                         'is_stub_installer': options.is_stub_installer,
+                        'template': options.template,
                         'timeout': options.timeout,
                         'log_level': options.log_level}
 
