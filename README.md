@@ -2,6 +2,10 @@
 [![Build Status](https://travis-ci.org/mozilla/mozdownload.svg?branch=master)](https://travis-ci.org/mozilla/mozdownload)
 [![Stories in Ready](https://badge.waffle.io/mozilla/mozdownload.png?label=ready&title=Ready)](https://waffle.io/mozilla/mozdownload)
 
+.. image:: https://img.shields.io/requires/github/mozilla/mozdownload.svg
+   :target: https://requires.io/github/mozilla/mozdownload/requirements/?branch=master
+   :alt: Requirements
+
 # mozdownload
 
 [mozdownload](https://github.com/mozilla/mozdownload)
